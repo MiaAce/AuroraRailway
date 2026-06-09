@@ -1,0 +1,8 @@
+error_dumps/
+.env
+node_modules/
+assets/avatar/
+backup-db/
+temp/
+nodemon.json
+dist/

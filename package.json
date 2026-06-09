@@ -1,0 +1,61 @@
+{
+  "name": "justice-bot-template",
+  "version": "1.0.0",
+  "description": "",
+  "main": "main.js",
+  "scripts": {
+    "build": "tsc",
+    "start": "node -r dotenv/config ./dist/main.js",
+    "dev": "tsc --watch & nodemon --watch dist --ext js --exec \"node -r dotenv/config ./dist/main.js\"",
+    "clean": "rm -rf dist/*",
+    "lint": "eslint source --ext .ts",
+    "lint:fix": "eslint source --ext .ts --fix"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/rootblind/justice-bot-template.git"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "LGPL-3.0-only",
+  "type": "module",
+  "bugs": {
+    "url": "https://github.com/rootblind/justice-bot-template/issues"
+  },
+  "homepage": "https://github.com/rootblind/justice-bot-template#readme",
+  "dependencies": {
+    "@discordjs/rest": "^2.6.0",
+    "ascii-table": "^0.0.9",
+    "child_process": "^1.0.2",
+    "colors": "^1.4.0",
+    "cpu-stat": "^2.0.1",
+    "discord.js": "^14.25.1",
+    "dotenv": "^17.2.3",
+    "fs": "^0.0.1-security",
+    "graceful-fs": "^4.2.11",
+    "node-cron": "^4.2.1",
+    "nodemon": "^3.1.11",
+    "pg": "^8.17.2",
+    "re": "^0.1.4",
+    "winston": "^3.19.0"
+  },
+  "devDependencies": {
+    "@babel/core": "^7.28.6",
+    "@babel/preset-env": "^7.28.6",
+    "@babel/preset-typescript": "^7.28.5",
+    "@eslint/js": "^9.39.2",
+    "@jest/globals": "^30.2.0",
+    "@types/graceful-fs": "^4.1.9",
+    "@types/jest": "^30.0.0",
+    "@types/node": "^25.0.10",
+    "@types/pg": "^8.16.0",
+    "@types/ws": "^8.18.1",
+    "eslint": "^9.39.2",
+    "globals": "^17.1.0",
+    "jest": "^30.2.0",
+    "ts-jest": "^29.4.6",
+    "ts-node": "^10.9.2",
+    "typescript": "^5.9.3",
+    "typescript-eslint": "^8.54.0"
+  }
+}
