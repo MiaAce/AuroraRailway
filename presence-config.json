@@ -1,0 +1,31 @@
+import type { Guild, GuildTextBasedChannel, User } from "discord.js";
+import { embed_ban } from "../../utility_modules/embed_builders.js";
+import { errorLogHandle } from "../../utility_modules/error_logger.js";
+
+/**
+ * Build the embed to send in logChannel if it exists
+ * @param guild The guild object
+ * @param target The banned user
+ * @param moderator The moderator
+ * @param reason The reason of the ban
+ * @param logChannel The moderation logs channel if it exists
+ */
+export async function log_ban(
+    guild: Guild,
+    target: User,
+    moderator: User,
+    reason: string = "No reason specified",
+    logChannel: GuildTextBasedChannel | null = null
+) {
+    if(logChannel) {
+        try { // send the log to the log channel
+            await logChannel.send({
+                embeds: [
+                    embed_ban(target, moderator, reason)
+                ]
+            });
+        } catch (error) {
+            await errorLogHandle(error, `Failed logging the ban of ${target.id} from ${guild.name}[${guild.id}]`);
+        }
+    }
+}

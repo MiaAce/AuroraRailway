@@ -1,0 +1,91 @@
+import { AuditLogEvent, type GuildChannel, type User, type Guild, VoiceChannel, TextChannel, CategoryChannel } from "discord.js";
+import type { Event } from "../../Interfaces/event.js";
+import { fetchLogsChannel } from "../../utility_modules/discord_helpers.js";
+import { embed_channel_event } from "../../utility_modules/embed_builders.js";
+import DatabaseRepo from "../../Repositories/database_repository.js";
+import type { ColumnValuePair } from "../../Interfaces/database_types.js";
+import { errorLogHandle } from "../../utility_modules/error_logger.js";
+import AutoVoiceSystemRepo from "../../Repositories/autovoicesystem.js";
+import ClanRepo from "../../Repositories/clan.js";
+import ClanSystemRepo from "../../Repositories/clansystem.js";
+import LfgSystemRepo from "../../Repositories/lfgsystem.js";
+import KofiIntegrationRepo from "../../Repositories/kofiintegration.js";
+
+export type channelDeleteHook = (channel: GuildChannel) => Promise<void>;
+const hooks: channelDeleteHook[] = [];
+export function extend_channelDelete(hook: channelDeleteHook) {
+    hooks.push(hook);
+}
+
+async function runHooks(channel: GuildChannel) {
+    for (const hook of hooks) {
+        try {
+            await hook(channel);
+        } catch (error) {
+            await errorLogHandle(error);
+        }
+    }
+}
+
+const channelDelete: Event = {
+    name: "channelDelete",
+    async execute(channel: GuildChannel) {
+        const guild: Guild = channel.guild;
+
+        /**
+         * Deleting a channel used or registered by one or more database tables must be curated
+         */
+
+        const property: ColumnValuePair = { column: "channel", value: channel.id }
+        const tablesToBeCleaned = await DatabaseRepo.getTablesWithColumnValue(property);
+        for (const table of tablesToBeCleaned) {
+            await DatabaseRepo.wipeGuildRowsWithProperty(guild.id, table, property);
+        }
+
+        // clean autovoice system if any channel is deleted from it
+        await AutoVoiceSystemRepo.onChannelDelete(guild.id, channel.id);
+
+        // clean lfg-system related channels
+        await LfgSystemRepo.onGameComponentDelete(guild.id, channel.id);
+        await LfgSystemRepo.deleteChannelBySnowflake(channel.id);
+
+        // ko-fi integration
+        await KofiIntegrationRepo.deleteIntegrationByChannel(channel.id);
+
+        // handle the deletion of clan channels
+        if (channel instanceof VoiceChannel || channel instanceof TextChannel) {
+            await ClanRepo.onClanChannelDelete(guild.id, channel);
+        }
+
+        if (channel instanceof CategoryChannel) {
+            await ClanSystemRepo.onCategoryDelete(guild.id, channel);
+        }
+
+        await runHooks(channel);
+        // logging
+        const logChannel = await fetchLogsChannel(guild, "server-activity");
+        if (!logChannel) return;
+
+        const channelDeleteAudit = await guild.fetchAuditLogs({
+            type: AuditLogEvent.ChannelDelete,
+            limit: 1
+        });
+
+        const entry = channelDeleteAudit.entries.first();
+
+        if (!entry || !entry.executor || entry.executor.bot) return;
+        if (entry.target.id !== channel.id) return; // ignore if the audit log doesn't target the channel
+
+        try {
+            await logChannel.send({
+                embeds: [
+                    embed_channel_event(channel, entry.executor as User, "deleted", "Red")
+                ]
+            });
+        } catch (error) {
+            await errorLogHandle(error, `Failed to channelDelete event from ${guild.name}[${guild.id}]`);
+        }
+    }
+}
+
+export default channelDelete;
